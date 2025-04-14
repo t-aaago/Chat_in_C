@@ -48,12 +48,14 @@ int main(){
     {
         printf("New client connected!\n");
 
+        pthread_mutex_lock(&lock);
         for (size_t i = 0; i < MAX_CLIENTS; i++){
             if(clients[i] == 0){
                 clients[i] = client_fd;
             }
         }
-
+        pthread_mutex_unlock(&lock);
+        
         pthread_create(&client_addr, NULL, handleClient, &client_fd);
         pthread_detach(client_thread);
     }
