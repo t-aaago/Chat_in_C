@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 #include <arpa/inet.h>
 #include <pthread.h>
 
@@ -7,9 +8,26 @@
 #define PORT 8888
 
 int clients[MAX_CLIENTS];  
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+void broadcast(const char* message, int client_fd){
+    for (size_t i = 0; i < MAX_CLIENTS; i++){
+
+        if(clients[i] != 0 && clients[i] != client_fd){
+            send(clients[i], message, strlen(message), 0);
+        }
+
+    }
+}
 
 void handleClient(void* arg){
     int client_fd = *(int*) arg;
+    char buffer[MAX_MSG];
+    ssize_t len = 0;
+
+    while((len = recv(client_fd, buffer, sizeof(buffer), 0)) > 0){
+        broadcast(buffer, client_fd);
+    }
 }
 
 int main(){
@@ -29,6 +47,13 @@ int main(){
     while ((client_fd  = accept(server_fd, &client_addr, sizeof(client_addr))))
     {
         printf("New client connected!\n");
+
+        for (size_t i = 0; i < MAX_CLIENTS; i++){
+            if(clients[i] == 0){
+                clients[i] = client_fd;
+            }
+        }
+
         pthread_create(&client_addr, NULL, handleClient, &client_fd);
         pthread_detach(client_thread);
     }
