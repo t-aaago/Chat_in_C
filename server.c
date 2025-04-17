@@ -13,7 +13,7 @@ pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 void broadcast(const char* message, int client_fd){
     pthread_mutex_lock(&lock);
-    for (size_t i = 0; i < MAX_CLIENTS; i++){
+    for (int i = 0; i < MAX_CLIENTS; i++){
 
         if(clients[i] != 0 && clients[i] != client_fd){
             send(clients[i], message, strlen(message), 0);
@@ -35,7 +35,7 @@ void* handleClient(void* arg){
 
     close(client_fd);
     pthread_mutex_lock(&lock);
-    for (size_t i = 0; i < MAX_CLIENTS; i++){
+    for (int i = 0; i < MAX_CLIENTS; i++){
         if (clients[i] = client_fd){
             clients[i] = 0;
         }
@@ -65,9 +65,10 @@ int main(){
         printf("New client connected!\n");
 
         pthread_mutex_lock(&lock);
-        for (size_t i = 0; i < MAX_CLIENTS; i++){
+        for (int i = 0; i < MAX_CLIENTS; i++){
             if(clients[i] == 0){
                 clients[i] = client_fd;
+                break;
             }
         }
         pthread_mutex_unlock(&lock);
