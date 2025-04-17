@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
 #include <arpa/inet.h>
 #include <pthread.h>
 
@@ -22,7 +23,7 @@ void broadcast(const char* message, int client_fd){
     pthread_mutex_unlock(&lock);
 }
 
-void handleClient(void* arg){
+void* handleClient(void* arg){
     int client_fd = *(int*) arg;
     char buffer[MAX_MSG];
     ssize_t len = 0;
@@ -40,23 +41,26 @@ void handleClient(void* arg){
         }
     }
     pthread_mutex_unlock(&lock);
+
+    return NULL;
 }
 
 int main(){
     int server_fd, client_fd;
     struct sockaddr_in server_addr, client_addr;
     pthread_t client_thread;
+    socklen_t socklen = sizeof(client_addr);
 
     server_fd = socket(AF_INET, SOCK_STREAM, 0);
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
     server_addr.sin_addr.s_addr = INADDR_ANY;
 
-    bind(server_fd, &server_addr, sizeof(server_addr));
+    bind(server_fd, (struct sockaddr*) &server_addr, sizeof(server_addr));
     listen(server_fd, MAX_CLIENTS);
     printf("Server up and Listening in %d\n", PORT);
 
-    while ((client_fd  = accept(server_fd, &client_addr, sizeof(client_addr))))
+    while ((client_fd  = accept(server_fd, (struct sockaddr*)&client_addr, &socklen)))
     {
         printf("New client connected!\n");
 
@@ -68,7 +72,7 @@ int main(){
         }
         pthread_mutex_unlock(&lock);
 
-        pthread_create(&client_addr, NULL, handleClient, &client_fd);
+        pthread_create(&client_thread, NULL, handleClient, &client_fd);
         pthread_detach(client_thread);
     }
     
