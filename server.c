@@ -11,6 +11,7 @@ int clients[MAX_CLIENTS];
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 void broadcast(const char* message, int client_fd){
+    pthread_mutex_lock(&lock);
     for (size_t i = 0; i < MAX_CLIENTS; i++){
 
         if(clients[i] != 0 && clients[i] != client_fd){
@@ -18,6 +19,7 @@ void broadcast(const char* message, int client_fd){
         }
 
     }
+    pthread_mutex_unlock(&lock);
 }
 
 void handleClient(void* arg){
@@ -26,8 +28,18 @@ void handleClient(void* arg){
     ssize_t len = 0;
 
     while((len = recv(client_fd, buffer, sizeof(buffer), 0)) > 0){
+        printf("> %s\n", buffer);
         broadcast(buffer, client_fd);
     }
+
+    close(client_fd);
+    pthread_mutex_lock(&lock);
+    for (size_t i = 0; i < MAX_CLIENTS; i++){
+        if (clients[i] = client_fd){
+            clients[i] = 0;
+        }
+    }
+    pthread_mutex_unlock(&lock);
 }
 
 int main(){
@@ -55,12 +67,12 @@ int main(){
             }
         }
         pthread_mutex_unlock(&lock);
-        
+
         pthread_create(&client_addr, NULL, handleClient, &client_fd);
         pthread_detach(client_thread);
     }
     
     close(server_fd);
-    print("Server Finished!\n");
+    printf("Server Finished!\n");
     return 0;
 }
